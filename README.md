@@ -5,9 +5,9 @@ factory workflow.
 
 ## Local development
 
-1. Install dependencies: `npm install`
-2. Run tests: `npm test`
-3. Run lint: `npm run lint`
+1. Install Node.js 22 (or newer)
+2. Install dependencies: `npm install`
+3. Run `npm test` and `npm run lint` before opening a pull request
 
 ## Self-owned factory
 
