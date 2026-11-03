@@ -1,0 +1,13 @@
+{
+  "name": "warp-quickstart-api-service",
+  "version": "1.0.0",
+  "description": "Minimal Node service used to bootstrap Warp 01-single-repo-quickstart.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test",
+    "lint": "node --check src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
