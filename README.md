@@ -73,7 +73,7 @@ npm run lint
 ├── docker/
 │   └── runner.Dockerfile
 ├── scripts/
-│   └── bootstrap-github.sh
+│   └── bootstrap-github.sh   # one-time/manual GitHub settings setup
 ├── src/
 │   └── index.js
 └── test/
@@ -143,6 +143,8 @@ Create the `factory-ready` label and apply branch protection:
 ```bash
 ./scripts/bootstrap-github.sh fkoh111/warp-quickstart-api-service
 ```
+
+This script is a one-time/manual setup tool. The factory workflow does not invoke it.
 
 The script also configures GitHub Actions workflow permissions so the
 default `GITHUB_TOKEN` can create pull requests.
