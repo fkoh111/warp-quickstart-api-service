@@ -26,7 +26,7 @@ Required GitHub configuration:
   or `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, or
   `VERCEL_API_KEY` for an override
 - Variable: `OPENCODE_MODEL` (optional, defaults to
-  `opencode/deepseek-v4-flash`)
+  `opencode/gpt-5.4-nano`)
 - Branch protection and the `factory-ready` label can be created with:
 
 ```bash

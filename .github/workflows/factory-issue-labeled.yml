@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .factory/runs
-          MODEL="${OPENCODE_MODEL:-opencode/deepseek-v4-flash}"
+          MODEL="${OPENCODE_MODEL:-opencode/gpt-5.4-nano}"
           opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
             | tee ".factory/runs/issue-${ISSUE_NUMBER}.log"
 
