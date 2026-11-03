@@ -3,8 +3,8 @@
 ## Setup
 
 1. Install Node.js 22 or newer.
-2. Run `npm install`.
-3. Run `npm test` and `npm run lint` before opening a pull request.
+2. Run `cd app && npm install`.
+3. Run `cd app && npm test` and `cd app && npm run lint` before opening a pull request.
 
 ## Scope
 

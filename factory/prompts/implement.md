@@ -18,7 +18,7 @@ Procedure:
 3. Create a branch named factory/issue-$ISSUE_NUMBER-<short-slug>.
 4. Read the relevant code before editing.
 5. Make the smallest coherent change that satisfies the issue.
-6. Run npm ci, npm test, and npm run lint. Fix failures caused by your change.
+6. Run npm ci, npm test, and npm run lint from the `app/` directory. Fix failures caused by your change.
 7. Commit the change with a message referencing issue #$ISSUE_NUMBER.
 8. Push the branch.
 9. Open a pull request against $DEFAULT_BRANCH. The PR body must link the

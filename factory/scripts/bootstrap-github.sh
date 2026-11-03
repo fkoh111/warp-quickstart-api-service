@@ -21,7 +21,7 @@ fi
 gh api \
   --method PUT \
   "repos/$REPO/branches/main/protection" \
-  --input .github/branch-protection.json
+  --input factory/branch-protection.json
 
 # Allow the default GITHUB_TOKEN to create pull requests. This is required
 # for the factory workflow to open PRs without a separate app token.
