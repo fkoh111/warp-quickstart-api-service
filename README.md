@@ -9,6 +9,9 @@ definition, automation, runner, prompts, and GitHub configuration scripts needed
 to reproduce the `01-single-repo-quickstart` pattern without a managed
 platform.
 
+> **In short:** this is a *minimal, auditable* target repo for a
+> self-owned factory workflow.
+
 ## Overview
 
 This project has two parts:
@@ -25,20 +28,25 @@ requests automatically; a human reviews and merges every change.
 - Minimal Node.js service with `node:test` tests
 - GitHub Actions workflow triggered by `factory-ready` issues
 - OpenCode-based implementation agent
-- Least-privilege workflow permissions
+- **Least-privilege** workflow permissions
 - Pull-request CI checks
 - Branch protection and label setup
 - Docker runner image for local parity
 
 ## Prerequisites
 
-- Node.js 22 or newer
-- npm
-- Docker, for optional local runner validation
+- **Node.js 22+**
+- **npm**
+- Docker *(optional; for local runner validation)*
 - A GitHub repository with Actions enabled
-- An OpenCode Zen API key with sufficient credits
+- An OpenCode Zen API key *(with sufficient credits)*
+
+> If you’re just testing locally, you can focus on `app/` and skip the
+> OpenCode/OpenTofu parts.
 
 ## Getting started
+
+*Run these commands from the repository root.*
 
 ```bash
 cd app
@@ -46,6 +54,9 @@ npm install
 npm test
 npm run lint
 ```
+
+> For deterministic installs, you can use `npm ci` instead of
+> `npm install`.
 
 ## Project structure
 
@@ -105,9 +116,9 @@ failed run.
 
 ### Safety
 
-- The workflow uses least-privilege permissions.
+- The workflow uses **least-privilege** permissions.
 - Branches are created under `factory/`.
-- Pull requests require human review.
+- Pull requests require **human review**.
 - Force pushes and branch deletions are blocked.
 - The factory never merges pull requests.
 
@@ -150,9 +161,9 @@ GitHub infrastructure used by the factory workflow:
 - The GitHub App private key stored **outside** the repo (path provided to
   OpenTofu)
 
-> Note: OpenTofu state will contain the private key in plaintext. Keep local
-> state out of Git by using the repo’s `.gitignore` (or use an encrypted remote
-> backend).
+> **Note:** OpenTofu state will contain the private key in plaintext. Keep
+> local state out of Git by using the repo’s `.gitignore` (or use an
+> encrypted remote backend).
 
 #### Inputs
 
@@ -235,6 +246,8 @@ The required check name must match the actual check run name. This
 repository requires `test` from the `PR checks` workflow.
 
 ## Contributing
+
+> Contributions should stay *small* and *reviewable*.
 
 1. Create a small, focused change.
 2. Run `cd app && npm test` and `cd app && npm run lint`.
