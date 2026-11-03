@@ -177,6 +177,8 @@ jobs:
       - name: Decide whether to run
         id: should-run
         shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           LABEL="factory-ready"
