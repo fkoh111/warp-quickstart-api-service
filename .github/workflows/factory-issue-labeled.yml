@@ -77,6 +77,7 @@ jobs:
         id: agent
         run: |
           set -euo pipefail
+          mkdir -p .factory/runs
           MODEL_ARGS=()
           if [ -n "${OPENCODE_MODEL:-}" ]; then
             MODEL_ARGS+=(--model "$OPENCODE_MODEL")
