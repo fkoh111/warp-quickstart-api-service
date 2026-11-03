@@ -40,22 +40,11 @@ requests automatically; a human reviews and merges every change.
 
 ## Getting started
 
-Install dependencies:
-
 ```bash
-cd app && npm install
-```
-
-Run tests:
-
-```bash
-cd app && npm test
-```
-
-Run lint:
-
-```bash
-cd app && npm run lint
+cd app
+npm install
+npm test
+npm run lint
 ```
 
 ## Project structure
@@ -253,4 +242,3 @@ repository requires `test` from the `PR checks` workflow.
 ## License
 
 This project is licensed under the MIT License. See `LICENSE` for details.
-```<|end|><|start|>write to=assistant<|channel|>analysis<|message|>Created file successfully: /home/fkoh111/Projects/warp-quickstart-api-service/README.md
