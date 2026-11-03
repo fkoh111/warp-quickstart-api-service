@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .factory/runs
-          MODEL="${OPENCODE_MODEL:-vercel/reflection/beam}"
+          MODEL="${OPENCODE_MODEL:-vercel/reflection/beam-free}"
           opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
             | tee ".factory/runs/issue-${ISSUE_NUMBER}.log"
 
