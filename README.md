@@ -9,6 +9,23 @@ definition, automation, runner, prompts, and GitHub configuration scripts needed
 to reproduce the `01-single-repo-quickstart` pattern without a managed
 platform.
 
+## Table of contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Getting started](#getting-started)
+- [Project structure](#project-structure)
+- [Self-owned factory](#self-owned-factory)
+  - [Trigger](#trigger)
+  - [Workflow](#workflow)
+- [Configuration](#configuration)
+- [Branch protection](#branch-protection-managed-by-opentofu)
+- [Docker runner](#docker-runner)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Overview
 
 This project has two parts:
@@ -30,6 +47,8 @@ requests automatically; a human reviews and merges every change.
 - Branch protection and label setup
 - Docker runner image for local parity
 
+---
+
 ## Prerequisites
 
 - Node.js 22 or newer
@@ -37,6 +56,8 @@ requests automatically; a human reviews and merges every change.
 - Docker, for optional local runner validation
 - A GitHub repository with Actions enabled
 - An OpenCode Zen API key with sufficient credits
+
+---
 
 ## Getting started
 
@@ -57,6 +78,8 @@ Run lint:
 ```bash
 cd app && npm run lint
 ```
+
+---
 
 ## Project structure
 
