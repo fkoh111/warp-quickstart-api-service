@@ -1,0 +1,103 @@
+name: Factory issue labeled
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: factory-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  implement:
+    name: implement
+    if: >-
+      github.event.label.name == 'factory-ready' &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      ISSUE_BODY: ${{ github.event.issue.body }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install OpenCode
+        run: |
+          curl -fsSL https://opencode.ai/v2/install | bash
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+
+      - name: Verify toolchain
+        run: |
+          set -euo pipefail
+          node --version
+          npm ci
+          npm test
+          npm run lint
+          opencode --version
+
+      - name: Render agent prompt
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          template = Path(".factory/prompts/implement.md").read_text()
+          rendered = template
+          for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH"):
+              rendered = rendered.replace(f"${key}", os.environ[key])
+          Path("/tmp/factory-prompt.md").write_text(rendered)
+          PY
+
+      - name: Run implementation agent
+        id: agent
+        run: |
+          set -euo pipefail
+          MODEL_ARGS=()
+          if [ -n "${OPENCODE_MODEL:-}" ]; then
+            MODEL_ARGS+=(--model "$OPENCODE_MODEL")
+          fi
+          opencode run --auto "${MODEL_ARGS[@]}" "$(cat /tmp/factory-prompt.md)" \
+            | tee ".factory/runs/issue-${ISSUE_NUMBER}.log"
+
+      - name: Upload agent log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factory-run-${{ github.event.issue.number }}
+          path: .factory/runs/
+          if-no-files-found: ignore
+
+      - name: Comment on issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$REPOSITORY" \
+            --body "Factory run failed. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
