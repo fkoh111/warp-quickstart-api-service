@@ -25,7 +25,8 @@ Required GitHub configuration:
 - Secret: `OPENCODE_API_KEY` for the default `opencode/beam-free` model,
   or `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, or
   `VERCEL_API_KEY` for an override
-- Variable: `OPENCODE_MODEL` (optional, defaults to `opencode/beam-free`)
+- Variable: `OPENCODE_MODEL` (optional, defaults to
+  `opencode/deepseek-v4-flash`)
 - Branch protection and the `factory-ready` label can be created with:
 
 ```bash
