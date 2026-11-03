@@ -68,8 +68,9 @@ npm run lint
 │   └── workflows/
 │       ├── factory-issue-labeled.yml  # issue-triggered factory workflow
 │       └── pr-checks.yml              # pull-request CI checks
-├── main.tf                               # OpenTofu: GitHub App credentials + repo settings
-└── variables.tf                          # OpenTofu inputs
+├── tofu/
+│   ├── main.tf                           # OpenTofu: GitHub App credentials + repo settings
+│   └── variables.tf                      # OpenTofu inputs
 ├── LICENSE                           # MIT license
 └── README.md                         # project documentation
 ```
@@ -132,7 +133,7 @@ Configure these in the repository settings.
 
 ### OpenTofu (GitHub App setup)
 
-The root `*.tf` files are meant to be applied with **OpenTofu** to configure
+The `tofu/*.tf` files are meant to be applied with **OpenTofu** to configure
 GitHub infrastructure used by the factory workflow:
 
 - `FACTORY_APP_CLIENT_ID` (GitHub Actions repo variable)
@@ -169,6 +170,7 @@ Configure these values via `TF_VAR_...` environment variables or `*.tfvars`
 ```bash
 export GITHUB_TOKEN="$(gh auth token)"
 
+cd tofu
 tofu init
 tofu plan
 tofu apply
@@ -224,7 +226,7 @@ gh api --method PUT repos/fkoh111/warp-quickstart-api-service/actions/permission
 Or run:
 
 ```bash
-tofu apply
+cd tofu && tofu apply
 ```
 
 ### Required status check is waiting
