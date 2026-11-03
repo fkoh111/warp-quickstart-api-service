@@ -5,7 +5,7 @@
 
 A minimal Node.js service used as the target repository for a self-owned
 GitHub Actions factory workflow. The repository also contains the factory
-definition, automation, runner, prompts, and GitHub bootstrap scripts needed
+definition, automation, runner, prompts, and GitHub configuration scripts needed
 to reproduce the `01-single-repo-quickstart` pattern without a managed
 platform.
 
@@ -27,7 +27,7 @@ requests automatically; a human reviews and merges every change.
 - OpenCode-based implementation agent
 - Least-privilege workflow permissions
 - Pull-request CI checks
-- Branch protection and label bootstrap script
+- Branch protection and label setup
 - Docker runner image for local parity
 
 ## Prerequisites
@@ -74,13 +74,13 @@ cd app && npm run lint
 │   │   └── implement.md                # OpenCode implementation prompt template
 │   ├── docker/
 │   │   └── runner.Dockerfile           # optional local runner image
-│   ├── scripts/
-│   │   └── bootstrap-github.sh         # one-time/manual GitHub settings setup
 │   └── branch-protection.json         # desired branch protection settings
 ├── .github/
 │   └── workflows/
 │       ├── factory-issue-labeled.yml  # issue-triggered factory workflow
 │       └── pr-checks.yml              # pull-request CI checks
+├── main.tf                               # OpenTofu: GitHub App credentials + repo settings
+└── variables.tf                          # OpenTofu inputs
 ├── LICENSE                           # MIT license
 └── README.md                         # project documentation
 ```
@@ -141,20 +141,51 @@ Configure these in the repository settings.
 | --- | --- | --- | --- |
 | `OPENCODE_MODEL` | No | `opencode/gpt-5.4-nano` | OpenCode model ID |
 
-## Bootstrap GitHub settings
+### OpenTofu (GitHub App setup)
 
-Create the `factory-ready` label and apply branch protection:
+The root `*.tf` files are meant to be applied with **OpenTofu** to configure
+GitHub infrastructure used by the factory workflow:
+
+- `FACTORY_APP_CLIENT_ID` (GitHub Actions repo variable)
+- `FACTORY_APP_PRIVATE_KEY` (GitHub Actions repo secret)
+- Optional: adding this repo to the GitHub App installation
+- `factory-ready` issue label
+- `main` branch protection
+- Default GitHub Actions workflow permissions (so `GITHUB_TOKEN` can create PRs)
+
+#### Prerequisites
+
+- `tofu` installed
+- A GitHub token with admin rights for the target repo (set as `GITHUB_TOKEN`)
+- The GitHub App private key stored **outside** the repo (path provided to
+  OpenTofu)
+
+> Note: OpenTofu state will contain the private key in plaintext. Keep local
+> state out of Git by using the repo’s `.gitignore` (or use an encrypted remote
+> backend).
+
+#### Inputs
+
+Configure these values via `TF_VAR_...` environment variables or `*.tfvars`
+(which are ignored by git):
+
+- `github_owner` (string)
+- `repository` (string, repo name without owner)
+- `factory_app_client_id` (string)
+- `factory_app_private_key_path` (string, absolute or relative path)
+- `factory_app_installation_id` (number, optional; default `null`)
+
+#### Run
 
 ```bash
-./factory/scripts/bootstrap-github.sh fkoh111/warp-quickstart-api-service
+export GITHUB_TOKEN="$(gh auth token)"
+
+tofu init
+tofu plan
+tofu apply
 ```
 
-This script is a one-time/manual setup tool. The factory workflow does not invoke it.
-
-The script also configures GitHub Actions workflow permissions so the
-default `GITHUB_TOKEN` can create pull requests.
-
-## Branch protection
+## Branch protection (managed by OpenTofu)
 
 `main` is protected with:
 
@@ -204,7 +235,7 @@ gh api --method PUT repos/fkoh111/warp-quickstart-api-service/actions/permission
 Or run:
 
 ```bash
-./factory/scripts/bootstrap-github.sh fkoh111/warp-quickstart-api-service
+tofu apply
 ```
 
 ### Required status check is waiting
