@@ -3,6 +3,8 @@ name: Factory issue labeled
 on:
   issues:
     types: [labeled]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
@@ -14,9 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  implement:
-    name: implement
+  implement_from_label:
+    name: implement (label)
     if: >-
+      github.event_name == 'issues' &&
       github.event.label.name == 'factory-ready' &&
       github.event.issue.state == 'open'
     runs-on: ubuntu-latest
@@ -27,6 +30,8 @@ jobs:
       ISSUE_NUMBER: ${{ github.event.issue.number }}
       ISSUE_TITLE: ${{ github.event.issue.title }}
       ISSUE_BODY: ${{ github.event.issue.body }}
+      COMMENT_BODY: ''
+      COMMENT_AUTHOR: ''
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL }}
       OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -88,8 +93,17 @@ jobs:
           from pathlib import Path
           template = Path("prompts/implement.md").read_text()
           rendered = template
+
+          issue_body = os.environ.get("ISSUE_BODY", "")
+          comment_body = os.environ.get("COMMENT_BODY", "").strip()
+          if comment_body:
+            issue_body = issue_body + "\n\nLatest comment:\n" + comment_body
+
           for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH"):
-              rendered = rendered.replace(f"${key}", os.environ[key])
+              if key == "ISSUE_BODY":
+                rendered = rendered.replace(f"${key}", issue_body)
+              else:
+                rendered = rendered.replace(f"${key}", os.environ[key])
           Path("/tmp/factory-prompt.md").write_text(rendered)
           PY
 
@@ -121,6 +135,161 @@ jobs:
 
       - name: Comment on issue on failure
         if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$REPOSITORY" \
+            --body "Factory run failed. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  implement_from_comment:
+    name: implement (comment)
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      ISSUE_BODY: ${{ github.event.issue.body }}
+      COMMENT_BODY: ${{ github.event.comment.body }}
+      COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL }}
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      VERCEL_API_KEY: ${{ secrets.VERCEL_API_KEY }}
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.FACTORY_APP_CLIENT_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+
+      - name: Decide whether to run
+        id: should-run
+        shell: bash
+        run: |
+          set -euo pipefail
+          LABEL="factory-ready"
+
+          # Skip if the comment is from the factory GitHub App bot to avoid loops.
+          APP_BOT_LOGIN="${{ steps.app-token.outputs.app-slug }}[bot]"
+          if [[ "${COMMENT_AUTHOR}" == "${APP_BOT_LOGIN}" ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Skip if the label isn't present.
+          if gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}/labels" --jq '.[].name' | grep -qx "$LABEL"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout repository
+        if: steps.should-run.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Configure git identity
+        if: steps.should-run.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          USER_ID="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+
+      - name: Set up Node.js
+        if: steps.should-run.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install OpenCode
+        if: steps.should-run.outputs.run == 'true'
+        run: |
+          curl -fsSL https://opencode.ai/v2/install | bash
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+
+      - name: Verify toolchain
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: app
+        run: |
+          set -euo pipefail
+          node --version
+          npm ci
+          npm test
+          npm run lint
+          opencode --version
+
+      - name: Render agent prompt
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          template = Path("prompts/implement.md").read_text()
+          rendered = template
+
+          issue_body = os.environ.get("ISSUE_BODY", "")
+          comment_body = os.environ.get("COMMENT_BODY", "").strip()
+          if comment_body:
+            issue_body = issue_body + "\n\nLatest comment:\n" + comment_body
+
+          for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH"):
+            if key == "ISSUE_BODY":
+              rendered = rendered.replace(f"${key}", issue_body)
+            else:
+              rendered = rendered.replace(f"${key}", os.environ[key])
+          Path("/tmp/factory-prompt.md").write_text(rendered)
+          PY
+
+      - name: Run implementation agent
+        if: steps.should-run.outputs.run == 'true'
+        id: agent
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          mkdir -p runs
+          MODEL="${OPENCODE_MODEL:-opencode/gpt-5.4-nano}"
+          opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
+            | tee "runs/issue-${ISSUE_NUMBER}.log"
+
+      - name: Verify agent pushed a branch
+        if: steps.should-run.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          git ls-remote --exit-code --heads origin "factory/issue-${ISSUE_NUMBER}-*"
+
+      - name: Upload agent log
+        if: always() && steps.should-run.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+           name: factory-run-${{ github.event.issue.number }}
+           path: factory/runs/
+           if-no-files-found: ignore
+
+      - name: Comment on issue on failure
+        if: failure() && steps.should-run.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
