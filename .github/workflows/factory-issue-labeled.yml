@@ -32,6 +32,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      VERCEL_API_KEY: ${{ secrets.VERCEL_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -78,11 +79,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .factory/runs
-          MODEL_ARGS=()
-          if [ -n "${OPENCODE_MODEL:-}" ]; then
-            MODEL_ARGS+=(--model "$OPENCODE_MODEL")
-          fi
-          opencode run --auto "${MODEL_ARGS[@]}" "$(cat /tmp/factory-prompt.md)" \
+          MODEL="${OPENCODE_MODEL:-vercel/reflection/beam}"
+          opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
             | tee ".factory/runs/issue-${ISSUE_NUMBER}.log"
 
       - name: Upload agent log
