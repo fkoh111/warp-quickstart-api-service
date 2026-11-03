@@ -22,11 +22,10 @@ This repository contains a GitHub Actions workflow that implements the
 
 Required GitHub configuration:
 
-- Secret: `VERCEL_API_KEY` for the default `vercel/reflection/beam` model,
-  or `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENROUTER_API_KEY` for an
-  override
-- Variable: `OPENCODE_MODEL` (optional, defaults to
-  `vercel/reflection/beam-free`)
+- Secret: `OPENCODE_API_KEY` for the default `opencode/beam-free` model,
+  or `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, or
+  `VERCEL_API_KEY` for an override
+- Variable: `OPENCODE_MODEL` (optional, defaults to `opencode/beam-free`)
 - Branch protection and the `factory-ready` label can be created with:
 
 ```bash

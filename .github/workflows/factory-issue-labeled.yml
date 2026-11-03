@@ -29,6 +29,7 @@ jobs:
       ISSUE_BODY: ${{ github.event.issue.body }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL }}
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -79,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .factory/runs
-          MODEL="${OPENCODE_MODEL:-vercel/reflection/beam-free}"
+          MODEL="${OPENCODE_MODEL:-opencode/beam-free}"
           opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
             | tee ".factory/runs/issue-${ISSUE_NUMBER}.log"
 
