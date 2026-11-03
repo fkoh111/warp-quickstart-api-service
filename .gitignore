@@ -1,3 +1,13 @@
 node_modules/
 npm-debug.log*
 .DS_Store
+
+# State contains the app private key in plaintext. Never commit it.
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+
+# Local inputs and key material
+*.tfvars
+*.pem
