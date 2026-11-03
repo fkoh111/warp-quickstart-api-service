@@ -3,7 +3,6 @@ name: PR checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths: ['app/**']
 
 permissions:
   contents: read
@@ -17,20 +16,47 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
+      - name: Detect app changes
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_REF="${{ github.base_ref }}"
+          BASE_SHA="$(git merge-base "origin/${BASE_REF}" HEAD)"
+          echo "Base SHA: ${BASE_SHA}"
+          CHANGED_FILES="$(git diff --name-only "${BASE_SHA}...HEAD")"
+          echo "Changed files:" 
+          echo "${CHANGED_FILES}"
+
+          if echo "${CHANGED_FILES}" | grep -qE '^app/'; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install dependencies
+        if: steps.detect.outputs.run_tests == 'true'
         working-directory: app
         run: npm ci
 
       - name: Run tests
+        if: steps.detect.outputs.run_tests == 'true'
         working-directory: app
         run: npm test
 
       - name: Run lint
+        if: steps.detect.outputs.run_tests == 'true'
         working-directory: app
         run: npm run lint
+
+      - name: Skip (no app changes)
+        if: steps.detect.outputs.run_tests != 'true'
+        run: echo "No changes under app/**; skipping tests/lint."
