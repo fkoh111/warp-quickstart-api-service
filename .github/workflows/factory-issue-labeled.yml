@@ -48,6 +48,41 @@ jobs:
           client-id: ${{ vars.FACTORY_APP_CLIENT_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
 
+      - name: Find existing factory PR for this issue
+        id: existing-pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          PREFIX="factory/issue-${ISSUE_NUMBER}-"
+
+          PR_JSON="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" 2>/dev/null || echo '[]')"
+          MATCH="$(echo "$PR_JSON" | jq -r --arg prefix "$PREFIX" '
+            ([ .[]
+              | select(.head.ref | startswith($prefix))
+              | {updated_at: .updated_at, branch: .head.ref, number: .number, url: .html_url}
+            ]
+            | sort_by(.updated_at)
+            | reverse
+            | .[0]
+            )
+            | select(. != null)
+            | "\(.branch)\t\(.number)\t\(.url)"
+          ')"
+
+          if [[ -z "${MATCH}" || "${MATCH}" == "null" ]]; then
+            EXISTING_BRANCH=""
+            EXISTING_PR_NUMBER=""
+            EXISTING_PR_URL=""
+          else
+            IFS=$'\t' read -r EXISTING_BRANCH EXISTING_PR_NUMBER EXISTING_PR_URL <<< "${MATCH}"
+          fi
+
+          echo "branch=${EXISTING_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${EXISTING_PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "pr_url=${EXISTING_PR_URL}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -86,6 +121,10 @@ jobs:
 
       - name: Render agent prompt
         working-directory: factory
+        env:
+          EXISTING_BRANCH: ${{ steps.existing-pr.outputs.branch }}
+          EXISTING_PR_URL: ${{ steps.existing-pr.outputs.pr_url }}
+          EXISTING_PR_NUMBER: ${{ steps.existing-pr.outputs.pr_number }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -99,7 +138,7 @@ jobs:
           if comment_body:
             issue_body = issue_body + "\n\nLatest comment:\n" + comment_body
 
-          for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH"):
+          for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH", "EXISTING_BRANCH", "EXISTING_PR_URL", "EXISTING_PR_NUMBER"):
               if key == "ISSUE_BODY":
                 rendered = rendered.replace(f"${key}", issue_body)
               else:
@@ -121,9 +160,15 @@ jobs:
             | tee "runs/issue-${ISSUE_NUMBER}.log"
 
       - name: Verify agent pushed a branch
+        env:
+          EXISTING_BRANCH: ${{ steps.existing-pr.outputs.branch }}
         run: |
           set -euo pipefail
-          git ls-remote --exit-code --heads origin "factory/issue-${ISSUE_NUMBER}-*"
+          if [[ -n "${EXISTING_BRANCH}" ]]; then
+            git ls-remote --exit-code --heads origin "${EXISTING_BRANCH}"
+          else
+            git ls-remote --exit-code --heads origin "factory/issue-${ISSUE_NUMBER}-*"
+          fi
 
       - name: Upload agent log
         if: always()
@@ -174,9 +219,46 @@ jobs:
           client-id: ${{ vars.FACTORY_APP_CLIENT_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
 
+      - name: Find existing factory PR for this issue
+        id: existing-pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          PREFIX="factory/issue-${ISSUE_NUMBER}-"
+
+          PR_JSON="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" 2>/dev/null || echo '[]')"
+          MATCH="$(echo "$PR_JSON" | jq -r --arg prefix "$PREFIX" '
+            ([ .[]
+              | select(.head.ref | startswith($prefix))
+              | {updated_at: .updated_at, branch: .head.ref, number: .number, url: .html_url}
+            ]
+            | sort_by(.updated_at)
+            | reverse
+            | .[0]
+            )
+            | select(. != null)
+            | "\(.branch)\t\(.number)\t\(.url)"
+          ')"
+
+          if [[ -z "${MATCH}" || "${MATCH}" == "null" ]]; then
+            EXISTING_BRANCH=""
+            EXISTING_PR_NUMBER=""
+            EXISTING_PR_URL=""
+          else
+            IFS=$'\t' read -r EXISTING_BRANCH EXISTING_PR_NUMBER EXISTING_PR_URL <<< "${MATCH}"
+          fi
+
+          echo "branch=${EXISTING_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${EXISTING_PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "pr_url=${EXISTING_PR_URL}" >> "$GITHUB_OUTPUT"
+
       - name: Decide whether to run
         id: should-run
         shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           LABEL="factory-ready"
@@ -189,7 +271,8 @@ jobs:
           fi
 
           # Skip if the label isn't present.
-          if gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}/labels" --jq '.[].name' | grep -qx "$LABEL"; then
+          HAS_LABEL="$(gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}/labels" --jq 'any(.[]; .name == "factory-ready")')"
+          if [[ "${HAS_LABEL}" == "true" ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -239,6 +322,10 @@ jobs:
       - name: Render agent prompt
         if: steps.should-run.outputs.run == 'true'
         working-directory: factory
+        env:
+          EXISTING_BRANCH: ${{ steps.existing-pr.outputs.branch }}
+          EXISTING_PR_URL: ${{ steps.existing-pr.outputs.pr_url }}
+          EXISTING_PR_NUMBER: ${{ steps.existing-pr.outputs.pr_number }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -252,7 +339,7 @@ jobs:
           if comment_body:
             issue_body = issue_body + "\n\nLatest comment:\n" + comment_body
 
-          for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH"):
+          for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH", "EXISTING_BRANCH", "EXISTING_PR_URL", "EXISTING_PR_NUMBER"):
             if key == "ISSUE_BODY":
               rendered = rendered.replace(f"${key}", issue_body)
             else:
@@ -275,10 +362,16 @@ jobs:
             | tee "runs/issue-${ISSUE_NUMBER}.log"
 
       - name: Verify agent pushed a branch
+        env:
+          EXISTING_BRANCH: ${{ steps.existing-pr.outputs.branch }}
         if: steps.should-run.outputs.run == 'true'
         run: |
           set -euo pipefail
-          git ls-remote --exit-code --heads origin "factory/issue-${ISSUE_NUMBER}-*"
+          if [[ -n "${EXISTING_BRANCH}" ]]; then
+            git ls-remote --exit-code --heads origin "${EXISTING_BRANCH}"
+          else
+            git ls-remote --exit-code --heads origin "factory/issue-${ISSUE_NUMBER}-*"
+          fi
 
       - name: Upload agent log
         if: always() && steps.should-run.outputs.run == 'true'
