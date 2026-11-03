@@ -177,6 +177,8 @@ jobs:
       - name: Decide whether to run
         id: should-run
         shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           LABEL="factory-ready"
@@ -189,7 +191,8 @@ jobs:
           fi
 
           # Skip if the label isn't present.
-          if gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}/labels" --jq '.[].name' | grep -qx "$LABEL"; then
+          HAS_LABEL="$(gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}/labels" --jq 'any(.[]; .name == "factory-ready")')"
+          if [[ "${HAS_LABEL}" == "true" ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
