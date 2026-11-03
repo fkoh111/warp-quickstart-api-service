@@ -64,20 +64,23 @@ npm run lint
 .
 ├── .factory/
 │   └── prompts/
-│       └── implement.md
+│       └── implement.md          # OpenCode implementation prompt template
 ├── .github/
 │   ├── workflows/
-│   │   ├── factory-issue-labeled.yml
-│   │   └── pr-checks.yml
-│   └── branch-protection.json
+│   │   ├── factory-issue-labeled.yml  # issue-triggered factory workflow
+│   │   └── pr-checks.yml              # pull-request CI checks
+│   └── branch-protection.json         # desired branch protection settings
 ├── docker/
-│   └── runner.Dockerfile
+│   └── runner.Dockerfile             # optional local runner image
 ├── scripts/
-│   └── bootstrap-github.sh   # one-time/manual GitHub settings setup
+│   └── bootstrap-github.sh           # one-time/manual GitHub settings setup
 ├── src/
-│   └── index.js
-└── test/
-    └── index.test.js
+│   └── index.js                      # application entry point
+├── test/
+│   └── index.test.js                 # application tests
+├── LICENSE                           # MIT license
+├── package.json                      # Node.js project metadata and scripts
+└── README.md                         # project documentation
 ```
 
 ## Self-owned factory
