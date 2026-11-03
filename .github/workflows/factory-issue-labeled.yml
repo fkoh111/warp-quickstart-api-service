@@ -70,6 +70,7 @@ jobs:
           echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
 
       - name: Verify toolchain
+        working-directory: app
         run: |
           set -euo pipefail
           node --version
@@ -79,12 +80,13 @@ jobs:
           opencode --version
 
       - name: Render agent prompt
+        working-directory: factory
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import os
           from pathlib import Path
-          template = Path(".factory/prompts/implement.md").read_text()
+          template = Path("prompts/implement.md").read_text()
           rendered = template
           for key in ("REPOSITORY", "ISSUE_NUMBER", "ISSUE_TITLE", "ISSUE_BODY", "DEFAULT_BRANCH"):
               rendered = rendered.replace(f"${key}", os.environ[key])
@@ -96,12 +98,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        working-directory: factory
         run: |
           set -euo pipefail
-          mkdir -p .factory/runs
+          mkdir -p runs
           MODEL="${OPENCODE_MODEL:-opencode/gpt-5.4-nano}"
           opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
-            | tee ".factory/runs/issue-${ISSUE_NUMBER}.log"
+            | tee "runs/issue-${ISSUE_NUMBER}.log"
 
       - name: Verify agent pushed a branch
         run: |
@@ -112,9 +115,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: factory-run-${{ github.event.issue.number }}
-          path: .factory/runs/
-          if-no-files-found: ignore
+           name: factory-run-${{ github.event.issue.number }}
+           path: factory/runs/
+           if-no-files-found: ignore
 
       - name: Comment on issue on failure
         if: failure()

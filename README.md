@@ -43,43 +43,45 @@ requests automatically; a human reviews and merges every change.
 Install dependencies:
 
 ```bash
-npm install
+cd app && npm install
 ```
 
 Run tests:
 
 ```bash
-npm test
+cd app && npm test
 ```
 
 Run lint:
 
 ```bash
-npm run lint
+cd app && npm run lint
 ```
 
 ## Project structure
 
 ```text
 .
-├── .factory/
-│   └── prompts/
-│       └── implement.md          # OpenCode implementation prompt template
-├── .github/
-│   ├── workflows/
-│   │   ├── factory-issue-labeled.yml  # issue-triggered factory workflow
-│   │   └── pr-checks.yml              # pull-request CI checks
+├── app/
+│   ├── src/
+│   │   └── index.js                      # application entry point
+│   ├── test/
+│   │   └── index.test.js                 # application tests
+│   ├── package.json                      # Node.js project metadata and scripts
+│   └── package-lock.json
+├── factory/
+│   ├── prompts/
+│   │   └── implement.md                # OpenCode implementation prompt template
+│   ├── docker/
+│   │   └── runner.Dockerfile           # optional local runner image
+│   ├── scripts/
+│   │   └── bootstrap-github.sh         # one-time/manual GitHub settings setup
 │   └── branch-protection.json         # desired branch protection settings
-├── docker/
-│   └── runner.Dockerfile             # optional local runner image
-├── scripts/
-│   └── bootstrap-github.sh           # one-time/manual GitHub settings setup
-├── src/
-│   └── index.js                      # application entry point
-├── test/
-│   └── index.test.js                 # application tests
+├── .github/
+│   └── workflows/
+│       ├── factory-issue-labeled.yml  # issue-triggered factory workflow
+│       └── pr-checks.yml              # pull-request CI checks
 ├── LICENSE                           # MIT license
-├── package.json                      # Node.js project metadata and scripts
 └── README.md                         # project documentation
 ```
 
@@ -95,7 +97,7 @@ The `Factory issue labeled` workflow:
 
 1. Checks out the repository.
 2. Installs Node.js 22 and OpenCode.
-3. Runs `npm ci`, `npm test`, and `npm run lint`.
+3. Runs `npm ci`, `npm test`, and `npm run lint` from `app/`.
 4. Renders the implementation prompt with issue metadata.
 5. Runs OpenCode with the configured model.
 6. Creates a branch, commits the change, and pushes it.
@@ -144,7 +146,7 @@ Configure these in the repository settings.
 Create the `factory-ready` label and apply branch protection:
 
 ```bash
-./scripts/bootstrap-github.sh fkoh111/warp-quickstart-api-service
+./factory/scripts/bootstrap-github.sh fkoh111/warp-quickstart-api-service
 ```
 
 This script is a one-time/manual setup tool. The factory workflow does not invoke it.
@@ -168,13 +170,13 @@ default `GITHUB_TOKEN` can create pull requests.
 Build the optional local runner image:
 
 ```bash
-docker build -f docker/runner.Dockerfile -t factory-runner .
+docker build -f factory/docker/runner.Dockerfile -t factory-runner .
 ```
 
 Run the toolchain and tests in the image:
 
 ```bash
-docker run --rm -v "$PWD:/work" -w /work factory-runner \
+docker run --rm -v "$PWD:/work" -w /work/app factory-runner \
   sh -c 'npm ci && npm test && npm run lint'
 ```
 
@@ -202,7 +204,7 @@ gh api --method PUT repos/fkoh111/warp-quickstart-api-service/actions/permission
 Or run:
 
 ```bash
-./scripts/bootstrap-github.sh fkoh111/warp-quickstart-api-service
+./factory/scripts/bootstrap-github.sh fkoh111/warp-quickstart-api-service
 ```
 
 ### Required status check is waiting
@@ -213,7 +215,7 @@ repository requires `test` from the `PR checks` workflow.
 ## Contributing
 
 1. Create a small, focused change.
-2. Run `npm test` and `npm run lint`.
+2. Run `cd app && npm test` and `cd app && npm run lint`.
 3. Open a pull request against `main`.
 4. Request review and address feedback.
 
