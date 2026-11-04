@@ -90,21 +90,23 @@ An issue is labeled `factory-ready`.
 The `Factory issue labeled` workflow:
 
 1. Checks out the repository.
-2. Installs Node.js 22 and OpenCode.
-3. Runs `npm ci`, `npm test`, and `npm run lint` from `app/`.
-4. Renders the implementation prompt with issue metadata.
-5. Runs OpenCode with the configured model.
-6. Creates a branch, commits the change, and pushes it.
-7. Opens a pull request against `main`.
-8. Comments on the issue with the pull request URL.
+2. Installs Node.js 22 and OpenCode and verifies the toolchain.
+3. Renders the implementation prompt with issue metadata.
+4. Runs OpenCode with the configured model; the agent creates a branch,
+   commits the change, pushes it, and opens a pull request against
+   `main`.
+5. Verifies the pushed change: the app suite (`npm ci`, `npm test`,
+   `npm run lint`) runs only when the change touches `app/`.
+6. Comments on the issue with the pull request URL and the verification
+   evidence.
 
 If the run fails, the workflow comments on the issue with a link to the
 failed run.
 
 ### Output
 
-- A pull request linked to the issue
-- Test and lint evidence in the pull request description
+- A pull request linked to the issue, with verification evidence in its
+  description
 - A completion or failure comment on the issue
 
 ### Safety
@@ -204,7 +206,8 @@ Any replacement must satisfy the factory's contract:
 - It supports `npm ci`, `npm test`, and `npm run lint`.
 - Its CI produces a status check named `test`: branch protection requires
   it, and `pr-checks.yml` only runs the checks when files under `app/`
-  change.
+  change. The factory workflow applies the same rule when verifying the
+  agent's change.
 
 To run the placeholder locally from the repository root:
 
