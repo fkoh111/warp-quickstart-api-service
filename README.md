@@ -5,12 +5,26 @@
 
 A minimal Node.js service used as the target repository for a self-owned
 GitHub Actions factory workflow. The repository also contains the factory
-definition, automation, runner, prompts, and GitHub configuration scripts needed
-to reproduce the `01-single-repo-quickstart` pattern without a managed
-platform.
+workflow, implementation prompts, and OpenTofu configuration needed to
+reproduce the `01-single-repo-quickstart` pattern without a managed platform.
 
-> **In short:** this is a *minimal, auditable* target repo for a
-> self-owned factory workflow.
+> [!NOTE]
+> In short: this is a minimal, auditable target repo for a self-owned
+> factory workflow.
+
+## Table of contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Getting started](#getting-started)
+- [Project structure](#project-structure)
+- [Self-owned factory](#self-owned-factory)
+- [Configuration](#configuration)
+- [Branch protection (managed by OpenTofu)](#branch-protection-managed-by-opentofu)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Overview
 
@@ -34,12 +48,13 @@ requests automatically; a human reviews and merges every change.
 
 ## Prerequisites
 
-- **Node.js 22+**
-- **npm**
+- Node.js 22+
+- npm
 - A GitHub repository with Actions enabled
-- An OpenCode Zen API key *(with sufficient credits)*
+- An OpenCode Zen API key (with sufficient credits)
 
-> If you’re just testing locally, you can focus on `app/` and skip the
+> [!TIP]
+> If you're just testing locally, you can focus on `app/` and skip the
 > OpenCode/OpenTofu parts.
 
 ## Getting started
@@ -66,15 +81,17 @@ npm run lint
 │   └── package-lock.json
 ├── factory/
 │   └── prompts/
-│       └── implement.md                # OpenCode implementation prompt template
+│       └── implement.md                  # OpenCode implementation prompt template
 ├── .github/
 │   └── workflows/
-│       ├── factory-issue-labeled.yml  # issue-triggered factory workflow
-│       └── pr-checks.yml              # pull-request CI checks
+│       ├── factory-issue-labeled.yml     # issue-triggered factory workflow
+│       └── pr-checks.yml                 # pull-request CI checks
 ├── tofu/
 │   ├── main.tf                           # OpenTofu: GitHub App credentials + repo settings
 │   └── variables.tf                      # OpenTofu inputs
-└── README.md                         # project documentation
+├── CONTRIBUTING.md                       # contribution guidelines
+├── LICENSE                               # MIT license
+└── README.md                             # project documentation
 ```
 
 ## Self-owned factory
@@ -152,9 +169,10 @@ GitHub infrastructure used by the factory workflow:
 - The GitHub App private key stored **outside** the repo (path provided to
   OpenTofu)
 
-> **Note:** OpenTofu state will contain the private key in plaintext. Keep
-> local state out of Git by using the repo’s `.gitignore` (or use an
-> encrypted remote backend).
+> [!WARNING]
+> OpenTofu state will contain the private key in plaintext. Keep local
+> state out of Git by using the repo's `.gitignore` (or use an encrypted
+> remote backend).
 
 #### Inputs
 
@@ -205,7 +223,10 @@ workflow.
 Ensure GitHub Actions workflow permissions allow pull request creation:
 
 ```bash
-gh api --method PUT repos/fkoh111/warp-quickstart-api-service/actions/permissions/workflow \
+OWNER="fkoh111"                        # your GitHub user or org
+REPO="warp-quickstart-api-service"     # your repository name
+
+gh api --method PUT "repos/${OWNER}/${REPO}/actions/permissions/workflow" \
   -f default_workflow_permissions=write \
   -F can_approve_pull_request_reviews=true
 ```
@@ -223,9 +244,15 @@ repository requires `test` from the `PR checks` workflow.
 
 ## Contributing
 
-> Contributions should stay *small* and *reviewable*.
+Contributions should stay small and reviewable:
 
 1. Create a small, focused change.
 2. Run `cd app && npm test` and `cd app && npm run lint`.
 3. Open a pull request against `main`.
 4. Request review and address feedback.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details and scope rules.
+
+## License
+
+Licensed under the MIT License. See [LICENSE](LICENSE) for details.
