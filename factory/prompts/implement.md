@@ -56,10 +56,11 @@ Verification:
   and `npm run lint` from the `app/` directory.
 - If the change only touches factory infrastructure
   (`.github/workflows/`, `factory/`, `tofu/`, or docs), run checks suited
-  to those files with tools already on the runner: parse workflow YAML
-  with python3's `yaml` module, `bash -n` for shell scripts, or
-  `tofu fmt -check` / `tofu validate` when OpenTofu is installed. Record
-  the app suite as "skipped (no app changes)".
+  to those files: `factory/tests/run.sh` when `factory/tests/` exists
+  (static lint + unit tests for the workflow scripts); otherwise parse
+  workflow YAML with python3's `yaml` module, `bash -n` for shell
+  scripts, or `tofu fmt -check` / `tofu validate` when OpenTofu is
+  installed. Record the app suite as "skipped (no app changes)".
 - Report only checks you actually ran, with their real results.
 
 Pull request body (use exactly this Markdown structure):
