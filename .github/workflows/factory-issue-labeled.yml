@@ -254,11 +254,11 @@ jobs:
 
       - name: Upload agent log
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
-           name: factory-run-${{ github.event.issue.number }}
-           path: factory/runs/
-           if-no-files-found: ignore
+            name: factory-run-${{ github.event.issue.number }}
+            path: factory/runs/
+            if-no-files-found: ignore
 
       - name: Comment on issue on failure
         if: failure()
@@ -530,7 +530,7 @@ jobs:
 
       - name: Upload agent log
         if: always() && steps.should-run.outputs.run == 'true'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
            name: factory-run-${{ github.event.issue.number }}
            path: factory/runs/
