@@ -31,13 +31,11 @@ requests automatically; a human reviews and merges every change.
 - **Least-privilege** workflow permissions
 - Pull-request CI checks
 - Branch protection and label setup
-- Docker runner image for local parity
 
 ## Prerequisites
 
 - **Node.js 22+**
 - **npm**
-- Docker *(optional; for local runner validation)*
 - A GitHub repository with Actions enabled
 - An OpenCode Zen API key *(with sufficient credits)*
 
@@ -67,10 +65,8 @@ npm run lint
 │   ├── package.json                      # Node.js project metadata and scripts
 │   └── package-lock.json
 ├── factory/
-│   ├── prompts/
-│   │   └── implement.md                # OpenCode implementation prompt template
-│   └── docker/
-│       └── runner.Dockerfile           # optional local runner image
+│   └── prompts/
+│       └── implement.md                # OpenCode implementation prompt template
 ├── .github/
 │   └── workflows/
 │       ├── factory-issue-labeled.yml  # issue-triggered factory workflow
@@ -192,21 +188,6 @@ tofu apply
 - Required conversation resolution
 - No force pushes
 - No branch deletions
-
-## Docker runner
-
-Build the optional local runner image:
-
-```bash
-docker build -f factory/docker/runner.Dockerfile -t factory-runner .
-```
-
-Run the toolchain and tests in the image:
-
-```bash
-docker run --rm -v "$PWD:/work" -w /work/app factory-runner \
-  sh -c 'npm ci && npm test && npm run lint'
-```
 
 ## Troubleshooting
 
