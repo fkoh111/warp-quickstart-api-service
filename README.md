@@ -69,9 +69,8 @@ npm run lint
 ├── factory/
 │   ├── prompts/
 │   │   └── implement.md                # OpenCode implementation prompt template
-│   ├── docker/
-│   │   └── runner.Dockerfile           # optional local runner image
-│   └── branch-protection.json         # desired branch protection settings
+│   └── docker/
+│       └── runner.Dockerfile           # optional local runner image
 ├── .github/
 │   └── workflows/
 │       ├── factory-issue-labeled.yml  # issue-triggered factory workflow
