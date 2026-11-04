@@ -110,13 +110,9 @@ jobs:
           echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
 
       - name: Verify toolchain
-        working-directory: app
         run: |
           set -euo pipefail
           node --version
-          npm ci
-          npm test
-          npm run lint
           opencode --version
 
       - name: Render agent prompt
@@ -196,6 +192,35 @@ jobs:
             git ls-remote --exit-code --heads origin "factory/issue-${ISSUE_NUMBER}-*"
           fi
 
+      - name: Verify change scope
+        id: scope-check
+        env:
+          EXISTING_BRANCH: ${{ steps.existing-pr.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git fetch origin --prune
+
+          if [[ -n "${EXISTING_BRANCH}" ]]; then
+            BRANCH="${EXISTING_BRANCH}"
+          else
+            BRANCH="$(git ls-remote --heads origin "factory/issue-${ISSUE_NUMBER}-*" \
+              | awk '{sub("^refs/heads/", "", $2); print $2}' | sort | tail -n 1)"
+          fi
+
+          git checkout -f "origin/${BRANCH}"
+
+          BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
+          CHANGED="$(git diff --name-only "${BASE_SHA}" HEAD)"
+          echo "Changed files:"
+          echo "${CHANGED}"
+
+          if echo "${CHANGED}" | grep -qE '^app/'; then
+            (cd app && npm ci && npm test && npm run lint)
+            echo "evidence=app/ changed; npm ci, npm test, and npm run lint passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "evidence=no app/ changes; app suite skipped" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload agent log
         if: always()
         uses: actions/upload-artifact@v4
@@ -212,18 +237,22 @@ jobs:
           set -euo pipefail
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$REPOSITORY" \
-            --body "Factory run failed. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            --body "$(printf '❌ **Factory run failed**\n\nSee the [workflow run](%s) for logs.\n' \
+              '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}')"
 
       - name: Comment on issue on success
         if: success()
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ steps.pr-url.outputs.url }}
+          EVIDENCE: ${{ steps.scope-check.outputs.evidence }}
         run: |
           set -euo pipefail
+          BODY="$(printf '✅ **Factory run succeeded**\n\nPull request: %s\n\n<details>\n<summary>Evidence</summary>\n\n- %s\n\n</details>\n' \
+            "$PR_URL" "${EVIDENCE:-no evidence reported}")"
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$REPOSITORY" \
-            --body "$(printf 'PR: %s\n\nEvidence (from app/):\n- npm ci: OK\n- npm test: OK\n- npm run lint: OK\n' "$PR_URL")"
+            --body "$BODY"
 
   implement_from_comment:
     name: implement (comment)
@@ -347,13 +376,9 @@ jobs:
 
       - name: Verify toolchain
         if: steps.should-run.outputs.run == 'true'
-        working-directory: app
         run: |
           set -euo pipefail
           node --version
-          npm ci
-          npm test
-          npm run lint
           opencode --version
 
       - name: Render agent prompt
@@ -438,6 +463,36 @@ jobs:
             git ls-remote --exit-code --heads origin "factory/issue-${ISSUE_NUMBER}-*"
           fi
 
+      - name: Verify change scope
+        id: scope-check
+        env:
+          EXISTING_BRANCH: ${{ steps.existing-pr.outputs.branch }}
+        if: steps.should-run.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          git fetch origin --prune
+
+          if [[ -n "${EXISTING_BRANCH}" ]]; then
+            BRANCH="${EXISTING_BRANCH}"
+          else
+            BRANCH="$(git ls-remote --heads origin "factory/issue-${ISSUE_NUMBER}-*" \
+              | awk '{sub("^refs/heads/", "", $2); print $2}' | sort | tail -n 1)"
+          fi
+
+          git checkout -f "origin/${BRANCH}"
+
+          BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
+          CHANGED="$(git diff --name-only "${BASE_SHA}" HEAD)"
+          echo "Changed files:"
+          echo "${CHANGED}"
+
+          if echo "${CHANGED}" | grep -qE '^app/'; then
+            (cd app && npm ci && npm test && npm run lint)
+            echo "evidence=app/ changed; npm ci, npm test, and npm run lint passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "evidence=no app/ changes; app suite skipped" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload agent log
         if: always() && steps.should-run.outputs.run == 'true'
         uses: actions/upload-artifact@v4
@@ -454,15 +509,19 @@ jobs:
           set -euo pipefail
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$REPOSITORY" \
-            --body "Factory run failed. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            --body "$(printf '❌ **Factory run failed**\n\nSee the [workflow run](%s) for logs.\n' \
+              '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}')"
 
       - name: Comment on issue on success
         if: success() && steps.should-run.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ steps.pr-url.outputs.url }}
+          EVIDENCE: ${{ steps.scope-check.outputs.evidence }}
         run: |
           set -euo pipefail
+          BODY="$(printf '✅ **Factory run succeeded**\n\nPull request: %s\n\n<details>\n<summary>Evidence</summary>\n\n- %s\n\n</details>\n' \
+            "$PR_URL" "${EVIDENCE:-no evidence reported}")"
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$REPOSITORY" \
-            --body "$(printf 'PR: %s\n\nEvidence (from app/):\n- npm ci: OK\n- npm test: OK\n- npm run lint: OK\n' "$PR_URL")"
+            --body "$BODY"
