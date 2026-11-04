@@ -50,13 +50,10 @@ requests automatically; a human reviews and merges every change.
 
 ```bash
 cd app
-npm install
+npm ci
 npm test
 npm run lint
 ```
-
-> For deterministic installs, you can use `npm ci` instead of
-> `npm install`.
 
 ## Project structure
 
@@ -82,7 +79,6 @@ npm run lint
 ├── tofu/
 │   ├── main.tf                           # OpenTofu: GitHub App credentials + repo settings
 │   └── variables.tf                      # OpenTofu inputs
-├── LICENSE                           # MIT license
 └── README.md                         # project documentation
 ```
 
@@ -253,7 +249,3 @@ repository requires `test` from the `PR checks` workflow.
 2. Run `cd app && npm test` and `cd app && npm run lint`.
 3. Open a pull request against `main`.
 4. Request review and address feedback.
-
-## License
-
-This project is licensed under the MIT License. See `LICENSE` for details.
