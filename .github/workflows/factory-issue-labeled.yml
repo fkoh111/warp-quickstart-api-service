@@ -242,17 +242,8 @@ jobs:
 
           PREFIX="factory/issue-${ISSUE_NUMBER}-"
           # shellcheck disable=SC2016
-          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" | jq -r --arg prefix "$PREFIX" '
-            ([
-              .[]
-              | select(.head.ref | startswith($prefix))
-              | {updated_at: .updated_at, branch: .head.ref, number: .number, url: .html_url}
-            ]
-            | sort_by(.updated_at)
-            | reverse
-            | .[0].url
-            // empty
-            ')"
+          JQ_FILTER='([.[] | select(.head.ref | startswith($prefix)) | {updated_at: .updated_at, branch: .head.ref, number: .number, url: .html_url}] | sort_by(.updated_at) | reverse | .[0].url)'
+          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" | jq -r --arg prefix "$PREFIX" "${JQ_FILTER}")"
           if [[ -z "${PR_URL}" || "${PR_URL}" == "null" ]]; then
             echo "No PR found for issue #${ISSUE_NUMBER}" >&2
             exit 1
@@ -609,17 +600,8 @@ jobs:
 
           PREFIX="factory/issue-${ISSUE_NUMBER}-"
           # shellcheck disable=SC2016
-          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" | jq -r --arg prefix "$PREFIX" '
-            ([
-              .[]
-              | select(.head.ref | startswith($prefix))
-              | {updated_at: .updated_at, branch: .head.ref, number: .number, url: .html_url}
-            ]
-            | sort_by(.updated_at)
-            | reverse
-            | .[0].url
-            // empty
-            ')"
+          JQ_FILTER='([.[] | select(.head.ref | startswith($prefix)) | {updated_at: .updated_at, branch: .head.ref, number: .number, url: .html_url}] | sort_by(.updated_at) | reverse | .[0].url)'
+          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" | jq -r --arg prefix "$PREFIX" "${JQ_FILTER}")"
           if [[ -z "${PR_URL}" || "${PR_URL}" == "null" ]]; then
             echo "No PR found for issue #${ISSUE_NUMBER}" >&2
             exit 1
