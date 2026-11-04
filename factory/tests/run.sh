@@ -21,7 +21,7 @@ echo "==> Installing test dependencies"
 
 echo "==> Static analysis (actionlint)"
 # The action metadata bundled with actionlint predates the client-id input
-# of actions/create-github-app-token@v3 (upstream deprecated app-id in
+# of actions/create-github-app-token@v4 (upstream deprecated app-id in
 # favor of client-id), so those two findings are false positives.
 ACTIONLINT_IGNORES=(
   -ignore "input \"client-id\" is not defined in action \"actions/create-github-app-token"
