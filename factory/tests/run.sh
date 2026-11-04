@@ -17,7 +17,7 @@ fi
 
 echo "==> Installing test dependencies"
 ./.venv/bin/pip install --quiet --upgrade pip
-./.venv/bin/pip install --quiet -r "${REPO_ROOT}/requirements.txt"
+./.venv/bin/pip install --quiet -r requirements.txt
 
 echo "==> Static analysis (actionlint)"
 # The action metadata bundled with actionlint predates the client-id input

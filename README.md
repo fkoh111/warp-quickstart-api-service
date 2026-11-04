@@ -252,6 +252,7 @@ npm run lint
 │   │   └── implement.md                  # OpenCode implementation prompt template
 │   └── tests/
 │       ├── conftest.py                   # fixtures: script extractor, git sandbox, shims
+│       ├── requirements.txt              # pytest + pyyaml for the local venv
 │       ├── run.sh                        # one-command suite runner (lint + tests)
 │       └── test_*.py                     # unit tests for the workflow scripts
 ├── .github/
@@ -264,8 +265,7 @@ npm run lint
 │   └── variables.tf                      # OpenTofu inputs
 ├── CONTRIBUTING.md                       # contribution guidelines
 ├── LICENSE                               # MIT license
-├── README.md                             # project documentation
-└── requirements.txt                      # Python dependencies (factory test suite)
+└── README.md                             # project documentation
 ```
 
 ## Troubleshooting
