@@ -1,0 +1,20 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# terraform.tfvars is ignored by git; never commit real credentials.
+
+# User or organization that owns the repository.
+github_owner = "your-github-username"
+
+# Repository name (without the owner) that runs the factory workflow.
+repository = "warp-quickstart-api-service"
+
+# Client ID of the factory GitHub App (shown on the app's settings page).
+factory_app_client_id = "Iv1.0123456789abcdef"
+
+# Path to the .pem private key generated for the factory GitHub App.
+# Keep the key file itself outside the repo.
+factory_app_private_key_path = "/absolute/path/to/factory-app.pem"
+
+# Optional. Installation ID of the app (the number in
+# github.com/settings/installations/<id>). When set, OpenTofu also adds
+# this repo to the installation. Uncomment to use.
+# factory_app_installation_id = 12345678

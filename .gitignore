@@ -11,3 +11,8 @@ crash.log
 # Local inputs and key material
 *.tfvars
 *.pem
+
+# Python test tooling (factory/tests)
+.venv/
+__pycache__/
+.pytest_cache/
