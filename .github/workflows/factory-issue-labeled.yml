@@ -141,6 +141,18 @@ jobs:
           node --version
           opencode --version
 
+      - name: Verify repository layout
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          for path in ../.github/workflows ../app ../tofu ../README.md; do
+            if [[ ! -e "${path}" ]]; then
+              echo "ERROR: Expected path does not exist: ${path}" >&2
+              exit 1
+            fi
+          done
+          echo "Repository layout OK"
+
       - name: Render agent prompt
         working-directory: factory
         env:
@@ -489,6 +501,19 @@ jobs:
           set -euo pipefail
           node --version
           opencode --version
+
+      - name: Verify repository layout
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          for path in ../.github/workflows ../app ../tofu ../README.md; do
+            if [[ ! -e "${path}" ]]; then
+              echo "ERROR: Expected path does not exist: ${path}" >&2
+              exit 1
+            fi
+          done
+          echo "Repository layout OK"
 
       - name: Render agent prompt
         if: steps.should-run.outputs.run == 'true'

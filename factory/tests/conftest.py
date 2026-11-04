@@ -81,6 +81,8 @@ BASE_TREE = {
     "README.md": "# test repo\n",
     "app/package.json": '{"name": "placeholder", "scripts": {"test": "true"}}\n',
     "app/src/index.js": "console.log('hello');\n",
+    ".github/workflows/pr-checks.yml": "name: PR checks\n",
+    "tofu/main.tf": "# tofu\n",
 }
 
 

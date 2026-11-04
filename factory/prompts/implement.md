@@ -23,6 +23,18 @@ File paths (relative to your working directory):
 Before editing any file, verify it exists with ls or cat. Files at the
 repository root are at ../ relative to your working directory.
 
+RULES (read before starting):
+- Your working directory is factory/. Repository root is at ../
+- DO verify a file exists (ls or cat) before reading or editing it
+- DO use ../ prefixes for all repo-root paths (e.g., ../.github/workflows/)
+- DO use shell commands (grep, cat, sed, python3, git, jq, ls, etc.)
+- DO NOT attempt web searches — you have no internet access
+- DO NOT assume tools exist that aren't listed below
+- DO NOT read .github/workflows/ without the ../ prefix
+- DO NOT use grep as a tool — use shell grep instead
+- Available tools: cat, grep, sed, python3, git, jq, ls, npm, node, opencode, bash, tee, tail, head, wc, sort, awk, printf, find, diff, patch, mv, cp, rm
+- Unavailable tools: web search, web fetch, internet access, grep-as-a-tool (use shell grep instead)
+
 Task:
 Implement the GitHub issue, verify the change as appropriate for its scope,
 and deliver a reviewable pull request. Do not merge anything.
