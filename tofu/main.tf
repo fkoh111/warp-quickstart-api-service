@@ -44,10 +44,18 @@ resource "github_app_installation_repository" "factory" {
 
 # Issue label used by the factory workflow trigger.
 resource "github_issue_label" "factory_ready" {
-  repository = var.repository
-  name       = "factory-ready"
-  color      = "0e8a16"
+  repository  = var.repository
+  name        = "factory-ready"
+  color       = "0e8a16"
   description = "Trigger the self-owned factory workflow"
+}
+
+# Issue label added when a factory run exhausts all retries.
+resource "github_issue_label" "factory_failed" {
+  repository  = var.repository
+  name        = "factory-failed"
+  color       = "d73a4a"
+  description = "Factory run failed after exhausting retries"
 }
 
 # Branch protection applied to the default branch.

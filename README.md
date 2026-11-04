@@ -163,7 +163,8 @@ GitHub infrastructure used by the factory workflow:
 - `FACTORY_APP_CLIENT_ID` (GitHub Actions repo variable)
 - `FACTORY_APP_PRIVATE_KEY` (GitHub Actions repo secret)
 - Optional: adding this repo to the GitHub App installation
-- `factory-ready` issue label
+- `factory-ready` issue label (trigger)
+- `factory-failed` issue label (escalation after exhausted retries)
 - `main` branch protection
 - Default GitHub Actions workflow permissions (so `GITHUB_TOKEN` can create PRs)
 

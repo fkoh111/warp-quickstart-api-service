@@ -141,6 +141,18 @@ jobs:
           node --version
           opencode --version
 
+      - name: Verify repository layout
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          for path in ../.github/workflows ../app ../tofu ../README.md; do
+            if [[ ! -e "${path}" ]]; then
+              echo "ERROR: Expected path does not exist: ${path}" >&2
+              exit 1
+            fi
+          done
+          echo "Repository layout OK"
+
       - name: Render agent prompt
         working-directory: factory
         env:
@@ -180,8 +192,40 @@ jobs:
           set -euo pipefail
           mkdir -p runs
           MODEL="${OPENCODE_MODEL:-opencode/gpt-5.4-nano}"
-          opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
-            | tee "runs/issue-${ISSUE_NUMBER}.log"
+          LOG="runs/issue-${ISSUE_NUMBER}.log"
+
+          is_transient() {
+            local tail
+            tail="$(tail -n 20 "${LOG}" 2>/dev/null || echo '')"
+            echo "${tail}" | grep -qiE "rate.limit|timeout|ECONNRESET|ETIMEDOUT|502|503|network error|connection refused|EAI_AGAIN|ENOTFOUND|too many requests|429"
+          }
+
+          # Attempt 1
+          if opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
+             | tee "${LOG}"; then
+            exit 0
+          fi
+
+          # Attempt 2 (transient only, 30s backoff)
+          if is_transient; then
+            sleep 30
+            if opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
+               | tee -a "${LOG}"; then
+              exit 0
+            fi
+          fi
+
+          # Attempt 3 (transient only, 60s backoff)
+          if is_transient; then
+            sleep 60
+            if opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
+               | tee -a "${LOG}"; then
+              exit 0
+            fi
+          fi
+
+          # All attempts exhausted
+          exit 1
 
       - name: Find PR URL for the issue
         id: pr-url
@@ -260,16 +304,61 @@ jobs:
             path: factory/runs/
             if-no-files-found: ignore
 
+      - name: Capture failure context
+        if: failure()
+        id: failure-context
+        run: |
+          set -euo pipefail
+          LOG="factory/runs/issue-${ISSUE_NUMBER}.log"
+          if [[ -f "${LOG}" ]]; then
+            TAIL="$(tail -n 20 "${LOG}")"
+          else
+            TAIL="No agent log available."
+          fi
+          {
+            echo "tail<<FACTORY_FAIL_EOF"
+            printf '%s\n' "${TAIL}"
+            echo "FACTORY_FAIL_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check circuit breaker
+        if: failure()
+        id: circuit-breaker
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          ATTEMPT_COUNT="$(gh issue view "$ISSUE_NUMBER" --repo "$REPOSITORY" \
+            --json labels --jq '[.labels[].name | select(startswith("factory-attempt-"))] | length')"
+          if [[ "$ATTEMPT_COUNT" -ge 2 ]]; then
+            echo "tripped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tripped=false" >> "$GITHUB_OUTPUT"
+            gh issue edit "$ISSUE_NUMBER" --repo "$REPOSITORY" \
+              --add-label "factory-attempt-$((ATTEMPT_COUNT + 1))"
+          fi
+
       - name: Comment on issue on failure
         if: failure()
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ERROR_TAIL: ${{ steps.failure-context.outputs.tail || 'No error context available.' }}
+          TRIPPED: ${{ steps.circuit-breaker.outputs.tripped }}
         run: |
           set -euo pipefail
+          # shellcheck disable=SC2016  # printf format string, not shell expansion
+          if [[ "${TRIPPED}" == "true" ]]; then
+            gh issue edit "$ISSUE_NUMBER" --repo "$REPOSITORY" --add-label "factory-failed"
+            BODY="$(printf '❌ **Factory run failed (escalated)**\n\nThis issue has failed multiple times. Manual intervention required.\n\n**Error summary (last 20 lines):**\n```\n%s\n```\n\nSee the [workflow run](%s) for full logs.\n' \
+              "$ERROR_TAIL" "$RUN_URL")"
+          else
+            BODY="$(printf '❌ **Factory run failed**\n\n**Error summary (last 20 lines):**\n```\n%s\n```\n\nSee the [workflow run](%s) for full logs.\n' \
+              "$ERROR_TAIL" "$RUN_URL")"
+          fi
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$REPOSITORY" \
-            --body "$(printf '❌ **Factory run failed**\n\nSee the [workflow run](%s) for logs.\n' "$RUN_URL")"
+            --body "$BODY"
 
       - name: Comment on issue on success
         if: success()
@@ -412,6 +501,19 @@ jobs:
           set -euo pipefail
           node --version
           opencode --version
+
+      - name: Verify repository layout
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          for path in ../.github/workflows ../app ../tofu ../README.md; do
+            if [[ ! -e "${path}" ]]; then
+              echo "ERROR: Expected path does not exist: ${path}" >&2
+              exit 1
+            fi
+          done
+          echo "Repository layout OK"
 
       - name: Render agent prompt
         if: steps.should-run.outputs.run == 'true'
