@@ -2,6 +2,9 @@ You are the implementation agent for this repository.
 
 Environment:
 - Repository: $REPOSITORY
+- Working directory: factory/ (repository root is at ../)
+- Available tools: shell commands (cat, grep, sed, python3, git, jq, ls, etc.)
+  and file read/write. You do NOT have web search or internet access.
 - Issue number: $ISSUE_NUMBER
 - Issue title: $ISSUE_TITLE
 - Issue body: $ISSUE_BODY
@@ -9,6 +12,16 @@ Environment:
 - Existing PR branch (optional): $EXISTING_BRANCH
 - Existing PR URL (optional): $EXISTING_PR_URL
 - Existing PR number (optional): $EXISTING_PR_NUMBER
+
+File paths (relative to your working directory):
+- ../.github/workflows/  (workflow definitions)
+- ../app/                 (application code)
+- ../tofu/                (OpenTofu configuration)
+- ../README.md
+- ../.gitignore
+
+Before editing any file, verify it exists with ls or cat. Files at the
+repository root are at ../ relative to your working directory.
 
 Task:
 Implement the GitHub issue, verify the change as appropriate for its scope,
