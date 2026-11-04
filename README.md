@@ -13,7 +13,7 @@ service for the factory to target.
 
 > [!NOTE]
 > In short: the factory is the point of this repo. The app in `app/` is
-> just a stand-in target you can replace with your own project.
+> just a stand-in target.
 
 ## Table of contents
 
@@ -41,14 +41,13 @@ requests automatically; a human reviews and merges every change.
 Everything lives in one repo: the factory workflow and prompt template
 (`.github/workflows/`, `factory/`), the GitHub infrastructure as code
 (`tofu/`), and a trivial Node.js service (`app/`) that exists only to give
-the factory something to change and CI something to run. Replace it with
-your own application; see [The target app](#the-target-app-placeholder).
+the factory something to change and CI something to run; see [The target app](#the-target-app-placeholder).
 
 ## Features
 
 - Issue-triggered factory workflow (`factory-ready` label)
 - OpenCode-based implementation agent with a configurable model
-- **Least-privilege** workflow permissions via a dedicated GitHub App
+- Least-privilege workflow permissions via a dedicated GitHub App
 - Automated pull requests with test and lint evidence
 - Pull-request CI checks (`PR checks` workflow)
 - OpenTofu-managed GitHub setup: app credentials, label, branch
@@ -63,10 +62,6 @@ your own application; see [The target app](#the-target-app-placeholder).
   OpenTofu)
 - `tofu` and `gh` for applying the GitHub configuration
 - Node.js 22+ and npm (only for the placeholder app and CI)
-
-> [!TIP]
-> If you're just testing locally, you can focus on `app/` and skip the
-> OpenCode/OpenTofu parts.
 
 ## Getting started
 
@@ -166,8 +161,9 @@ GitHub infrastructure used by the factory workflow:
 
 #### Inputs
 
-Configure these values via `TF_VAR_...` environment variables or `*.tfvars`
-(which are ignored by git):
+Copy `terraform.tfvars.example` to `terraform.tfvars` and fill in your
+values, or use `TF_VAR_...` environment variables. Real `*.tfvars` files
+are ignored by git:
 
 - `github_owner` (string)
 - `repository` (string, repo name without owner)
@@ -200,8 +196,7 @@ tofu apply
 ## The target app (placeholder)
 
 `app/` contains a trivial Node.js service whose only purpose is to give the
-factory something to change and CI something to run. It is meant to be
-replaced with your own application.
+factory something to change and CI something to run.  
 
 Any replacement must satisfy the factory's contract:
 
@@ -240,6 +235,7 @@ npm run lint
 │       └── pr-checks.yml                 # pull-request CI checks
 ├── tofu/
 │   ├── main.tf                           # OpenTofu: GitHub App credentials + repo settings
+│   ├── terraform.tfvars.example          # copyable template for OpenTofu inputs
 │   └── variables.tf                      # OpenTofu inputs
 ├── CONTRIBUTING.md                       # contribution guidelines
 ├── LICENSE                               # MIT license
