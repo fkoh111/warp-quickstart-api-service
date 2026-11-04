@@ -152,6 +152,7 @@ class Sandbox:
             "EXISTING_PR_NUMBER": "",
             "GH_TOKEN": "fake-token",
             "RUN_URL": "https://github.com/test-owner/test-repo/actions/runs/987654321",
+            "RUNNER_TEMP": str(tmp_path / "runner_temp"),
         }
 
     # -- setup helpers ----------------------------------------------------

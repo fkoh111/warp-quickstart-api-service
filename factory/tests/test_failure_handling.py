@@ -6,6 +6,8 @@
   whether to escalate.
 """
 
+from pathlib import Path
+
 CAPTURE_STEP = "Capture failure context"
 BREAKER_STEP = "Check circuit breaker"
 
@@ -13,9 +15,10 @@ BREAKER_STEP = "Check circuit breaker"
 def test_capture_failure_context_reads_log_tail(sandbox, scripts):
     script = scripts.get("implement_from_label", CAPTURE_STEP)
 
-    # Create a log file with more than 20 lines
-    log_path = sandbox.root / "work" / "factory" / "runs" / "issue-42.log"
-    log_path.parent.mkdir(parents=True, exist_ok=True)
+    # Create a log file with more than 20 lines in RUNNER_TEMP
+    log_dir = Path(sandbox.env["RUNNER_TEMP"]) / "factory-runs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "issue-42.log"
     lines = [f"line {i}" for i in range(1, 31)]
     log_path.write_text("\n".join(lines) + "\n")
 

@@ -28,10 +28,14 @@ RULES (read before starting):
 - DO verify a file exists (ls or cat) before reading or editing it
 - DO use ../ prefixes for all repo-root paths (e.g., ../.github/workflows/)
 - DO use shell commands (grep, cat, sed, python3, git, jq, ls, etc.)
+- DO use only ASCII characters in commands
 - DO NOT attempt web searches — you have no internet access
 - DO NOT assume tools exist that aren't listed below
 - DO NOT read .github/workflows/ without the ../ prefix
 - DO NOT use grep as a tool — use shell grep instead
+- DO NOT delete or modify files under ../factory/runs/ or RUNNER_TEMP
+- If a tool call fails with "tool not found", do NOT retry it — use shell commands instead
+- If an existing PR branch is checked out, verify its changes are correct before modifying
 - Available tools: cat, grep, sed, python3, git, jq, ls, npm, node, opencode, bash, tee, tail, head, wc, sort, awk, printf, find, diff, patch, mv, cp, rm
 - Unavailable tools: web search, web fetch, internet access, grep-as-a-tool (use shell grep instead)
 

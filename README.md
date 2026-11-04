@@ -153,7 +153,7 @@ Configure these in the repository settings.
 
 | Name | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `OPENCODE_MODEL` | No | `opencode/gpt-5.4-nano` | OpenCode model ID |
+| `OPENCODE_MODEL` | No | `opencode/gpt-5.4-nano` | OpenCode model ID. Complex issues may benefit from a more capable model (e.g., a larger OpenCode, OpenAI, or Anthropic model). Override via this variable. |
 
 ### OpenTofu (GitHub App setup)
 

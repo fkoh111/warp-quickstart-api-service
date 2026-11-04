@@ -190,9 +190,9 @@ jobs:
         working-directory: factory
         run: |
           set -euo pipefail
-          mkdir -p runs
+          mkdir -p "${RUNNER_TEMP}/factory-runs"
           MODEL="${OPENCODE_MODEL:-opencode/gpt-5.4-nano}"
-          LOG="runs/issue-${ISSUE_NUMBER}.log"
+          LOG="${RUNNER_TEMP}/factory-runs/issue-${ISSUE_NUMBER}.log"
 
           is_transient() {
             local tail
@@ -232,6 +232,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EXISTING_PR_URL: ${{ steps.existing-pr.outputs.pr_url }}
         run: |
           set -euo pipefail
           if [[ -n "${EXISTING_PR_URL:-}" ]]; then
@@ -240,10 +241,8 @@ jobs:
           fi
 
           PREFIX="factory/issue-${ISSUE_NUMBER}-"
-          # The jq program below is single-quoted on purpose; its $prefix is
-          # a jq variable bound via --arg, not a shell expansion.
           # shellcheck disable=SC2016
-          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" --jq '
+          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" | jq -r --arg prefix "$PREFIX" '
             ([
               .[]
               | select(.head.ref | startswith($prefix))
@@ -252,7 +251,12 @@ jobs:
             | sort_by(.updated_at)
             | reverse
             | .[0].url
-          ' --arg prefix "$PREFIX")"
+            // empty
+            ')"
+          if [[ -z "${PR_URL}" || "${PR_URL}" == "null" ]]; then
+            echo "No PR found for issue #${ISSUE_NUMBER}" >&2
+            exit 1
+          fi
 
           echo "url=${PR_URL}" >> "$GITHUB_OUTPUT"
 
@@ -301,7 +305,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
            name: factory-run-${{ github.event.issue.number }}
-           path: factory/runs/
+           path: ${{ runner.temp }}/factory-runs/
            if-no-files-found: ignore
 
       - name: Capture failure context
@@ -309,7 +313,7 @@ jobs:
         id: failure-context
         run: |
           set -euo pipefail
-          LOG="factory/runs/issue-${ISSUE_NUMBER}.log"
+          LOG="${RUNNER_TEMP}/factory-runs/issue-${ISSUE_NUMBER}.log"
           if [[ -f "${LOG}" ]]; then
             TAIL="$(tail -n 20 "${LOG}")"
           else
@@ -552,10 +556,42 @@ jobs:
         working-directory: factory
         run: |
           set -euo pipefail
-          mkdir -p runs
+          mkdir -p "${RUNNER_TEMP}/factory-runs"
           MODEL="${OPENCODE_MODEL:-opencode/gpt-5.4-nano}"
-          opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
-            | tee "runs/issue-${ISSUE_NUMBER}.log"
+          LOG="${RUNNER_TEMP}/factory-runs/issue-${ISSUE_NUMBER}.log"
+
+          is_transient() {
+            local tail
+            tail="$(tail -n 20 "${LOG}" 2>/dev/null || echo '')"
+            echo "${tail}" | grep -qiE "rate.limit|timeout|ECONNRESET|ETIMEDOUT|502|503|network error|connection refused|EAI_AGAIN|ENOTFOUND|too many requests|429"
+          }
+
+          # Attempt 1
+          if opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
+             | tee "${LOG}"; then
+            exit 0
+          fi
+
+          # Attempt 2 (transient only, 30s backoff)
+          if is_transient; then
+            sleep 30
+            if opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
+               | tee -a "${LOG}"; then
+              exit 0
+            fi
+          fi
+
+          # Attempt 3 (transient only, 60s backoff)
+          if is_transient; then
+            sleep 60
+            if opencode run --auto --model "$MODEL" "$(cat /tmp/factory-prompt.md)" \
+               | tee -a "${LOG}"; then
+              exit 0
+            fi
+          fi
+
+          # All attempts exhausted
+          exit 1
 
       - name: Find PR URL for the issue
         id: pr-url
@@ -572,10 +608,8 @@ jobs:
           fi
 
           PREFIX="factory/issue-${ISSUE_NUMBER}-"
-          # The jq program below is single-quoted on purpose; its $prefix is
-          # a jq variable bound via --arg, not a shell expansion.
           # shellcheck disable=SC2016
-          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" --jq '
+          PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" | jq -r --arg prefix "$PREFIX" '
             ([
               .[]
               | select(.head.ref | startswith($prefix))
@@ -584,7 +618,12 @@ jobs:
             | sort_by(.updated_at)
             | reverse
             | .[0].url
-          ' --arg prefix "$PREFIX")"
+            // empty
+            ')"
+          if [[ -z "${PR_URL}" || "${PR_URL}" == "null" ]]; then
+            echo "No PR found for issue #${ISSUE_NUMBER}" >&2
+            exit 1
+          fi
 
           echo "url=${PR_URL}" >> "$GITHUB_OUTPUT"
 
@@ -635,7 +674,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
            name: factory-run-${{ github.event.issue.number }}
-           path: factory/runs/
+           path: ${{ runner.temp }}/factory-runs/
            if-no-files-found: ignore
 
       - name: Comment on issue on failure
