@@ -46,6 +46,26 @@ if [[ "$name" == "gh" && "${1:-}" == "api" && -n "${GH_RESPONSE_FILE:-}" ]]; the
   cat "$GH_RESPONSE_FILE"
   exit 0
 fi
+if [[ "$name" == "gh" && "${1:-}" == "issue" && "${2:-}" == "view" && -n "${GH_RESPONSE_FILE:-}" ]]; then
+  # Apply --jq filter if present (jq is available on the runner).
+  jq_filter=""
+  args=("$@")
+  for ((i=0; i<$#; i++)); do
+    if [[ "${args[$i]}" == "--jq" ]]; then
+      jq_filter="${args[$((i+1))]}"
+      break
+    fi
+  done
+  if [[ -n "$jq_filter" ]]; then
+    jq -r "$jq_filter" < "$GH_RESPONSE_FILE"
+  else
+    cat "$GH_RESPONSE_FILE"
+  fi
+  exit 0
+fi
+if [[ "$name" == "gh" && "${1:-}" == "issue" && "${2:-}" == "edit" ]]; then
+  exit 0
+fi
 fail_var="SHIM_FAIL_$(printf '%s' "$name" | tr '[:lower:]' '[:upper:]')"
 if [[ -n "${!fail_var:-}" ]]; then
   exit 1

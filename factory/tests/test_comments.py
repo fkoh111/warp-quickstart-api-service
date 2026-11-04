@@ -40,15 +40,40 @@ def test_success_comment_falls_back_without_evidence(sandbox, scripts):
     assert "no evidence reported" in sandbox.shim_log_text()
 
 
-def test_failure_comment_links_the_run(sandbox, scripts):
+def test_failure_comment_is_enriched(sandbox, scripts):
     script = scripts.get("implement_from_label", FAILURE_STEP)
 
-    result = sandbox.run(script)
+    result = sandbox.run(
+        script,
+        env_extra={
+            "RUN_URL": "https://github.com/test-owner/test-repo/actions/runs/987654321",
+            "ERROR_TAIL": "Error: patch verification failed\nFailed to read file",
+            "TRIPPED": "false",
+        },
+    )
 
     assert result.returncode == 0, result.stderr
     body = sandbox.shim_log_text()
     assert "❌ **Factory run failed**" in body
-    assert (
-        "[workflow run](https://github.com/test-owner/test-repo"
-        "/actions/runs/987654321)"
-    ) in body
+    assert "**Error summary (last 20 lines):**" in body
+    assert "Error: patch verification failed" in body
+    assert "[workflow run](https://github.com/test-owner/test-repo/actions/runs/987654321)" in body
+
+
+def test_failure_comment_escalates_after_circuit_breaker(sandbox, scripts):
+    script = scripts.get("implement_from_label", FAILURE_STEP)
+
+    result = sandbox.run(
+        script,
+        env_extra={
+            "RUN_URL": "https://github.com/test-owner/test-repo/actions/runs/987654321",
+            "ERROR_TAIL": "Error: patch verification failed",
+            "TRIPPED": "true",
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    body = sandbox.shim_log_text()
+    assert "❌ **Factory run failed (escalated)**" in body
+    assert "Manual intervention required" in body
+    assert "factory-failed" in body  # gh issue edit --add-label factory-failed
