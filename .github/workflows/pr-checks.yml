@@ -8,10 +8,13 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: test
+  changes:
+    name: changes
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.detect.outputs.app }}
+      factory: ${{ steps.detect.outputs.factory }}
 
     steps:
       - name: Checkout repository
@@ -19,12 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Detect app changes
+      - name: Detect changed areas
         id: detect
         shell: bash
         run: |
@@ -33,30 +31,70 @@ jobs:
           BASE_SHA="$(git merge-base "origin/${BASE_REF}" HEAD)"
           echo "Base SHA: ${BASE_SHA}"
           CHANGED_FILES="$(git diff --name-only "${BASE_SHA}...HEAD")"
-          echo "Changed files:" 
+          echo "Changed files:"
           echo "${CHANGED_FILES}"
 
           if echo "${CHANGED_FILES}" | grep -qE '^app/'; then
-            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            echo "app=true" >> "$GITHUB_OUTPUT"
           else
-            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "app=false" >> "$GITHUB_OUTPUT"
           fi
 
+          if echo "${CHANGED_FILES}" | grep -qE '^(factory/|\.github/|tofu/)'; then
+            echo "factory=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "factory=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    name: test
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install dependencies
-        if: steps.detect.outputs.run_tests == 'true'
+        if: needs.changes.outputs.app == 'true'
         working-directory: app
         run: npm ci
 
       - name: Run tests
-        if: steps.detect.outputs.run_tests == 'true'
+        if: needs.changes.outputs.app == 'true'
         working-directory: app
         run: npm test
 
       - name: Run lint
-        if: steps.detect.outputs.run_tests == 'true'
+        if: needs.changes.outputs.app == 'true'
         working-directory: app
         run: npm run lint
 
       - name: Skip (no app changes)
-        if: steps.detect.outputs.run_tests != 'true'
+        if: needs.changes.outputs.app != 'true'
         run: echo "No changes under app/**; skipping tests/lint."
+
+  factory-tests:
+    name: factory-tests
+    needs: changes
+    if: needs.changes.outputs.factory == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run factory test suite
+        run: factory/tests/run.sh
