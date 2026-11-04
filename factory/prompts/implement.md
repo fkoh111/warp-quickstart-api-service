@@ -27,10 +27,10 @@ Procedure:
    - Run npm ci, npm test, and npm run lint from the `app/` directory.
      Fix failures caused by your change.
    - Commit the change with a message referencing issue #$ISSUE_NUMBER.
-   - Push the EXISTING_BRANCH branch.
+  - Push the EXISTING_BRANCH branch.
    - Do NOT open a new pull request (it already exists).
-   - Comment on the issue with the existing pull request URL
-     (EXISTING_PR_URL).
+   - Do NOT comment on the issue. The workflow will comment with the PR
+     URL and evidence.
    - Stop. Do not merge the pull request.
 
 4. Otherwise (EXISTING_BRANCH is empty):
@@ -43,11 +43,13 @@ Procedure:
    - Push the branch.
    - Open a pull request against $DEFAULT_BRANCH. The PR body must link the
      issue, summarize the change, and include the test/lint evidence.
-   - Comment on the issue with the pull request URL.
+   - Do NOT comment on the issue. The workflow will comment with the PR
+     URL and evidence.
    - Stop. Do not merge the pull request.
 
 Constraints:
 - Keep the change scoped to the issue.
 - Do not use force push.
 - Do not modify unrelated files.
+- Do not comment on the issue. The workflow handles success comments.
 - Do not merge.
