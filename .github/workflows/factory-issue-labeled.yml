@@ -79,9 +79,11 @@ jobs:
             IFS=$'\t' read -r EXISTING_BRANCH EXISTING_PR_NUMBER EXISTING_PR_URL <<< "${MATCH}"
           fi
 
-          echo "branch=${EXISTING_BRANCH}" >> "$GITHUB_OUTPUT"
-          echo "pr_number=${EXISTING_PR_NUMBER}" >> "$GITHUB_OUTPUT"
-          echo "pr_url=${EXISTING_PR_URL}" >> "$GITHUB_OUTPUT"
+          {
+            echo "branch=${EXISTING_BRANCH}"
+            echo "pr_number=${EXISTING_PR_NUMBER}"
+            echo "pr_url=${EXISTING_PR_URL}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -168,6 +170,9 @@ jobs:
           fi
 
           PREFIX="factory/issue-${ISSUE_NUMBER}-"
+          # The jq program below is single-quoted on purpose; its $prefix is
+          # a jq variable bound via --arg, not a shell expansion.
+          # shellcheck disable=SC2016
           PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" --jq '
             ([
               .[]
@@ -233,12 +238,12 @@ jobs:
         if: failure()
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$REPOSITORY" \
-            --body "$(printf '❌ **Factory run failed**\n\nSee the [workflow run](%s) for logs.\n' \
-              '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}')"
+            --body "$(printf '❌ **Factory run failed**\n\nSee the [workflow run](%s) for logs.\n' "$RUN_URL")"
 
       - name: Comment on issue on success
         if: success()
@@ -316,9 +321,11 @@ jobs:
             IFS=$'\t' read -r EXISTING_BRANCH EXISTING_PR_NUMBER EXISTING_PR_URL <<< "${MATCH}"
           fi
 
-          echo "branch=${EXISTING_BRANCH}" >> "$GITHUB_OUTPUT"
-          echo "pr_number=${EXISTING_PR_NUMBER}" >> "$GITHUB_OUTPUT"
-          echo "pr_url=${EXISTING_PR_URL}" >> "$GITHUB_OUTPUT"
+          {
+            echo "branch=${EXISTING_BRANCH}"
+            echo "pr_number=${EXISTING_PR_NUMBER}"
+            echo "pr_url=${EXISTING_PR_URL}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Decide whether to run
         id: should-run
@@ -327,7 +334,6 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          LABEL="factory-ready"
 
           # Skip if the comment is from the factory GitHub App bot to avoid loops.
           APP_BOT_LOGIN="${{ steps.app-token.outputs.app-slug }}[bot]"
@@ -438,6 +444,9 @@ jobs:
           fi
 
           PREFIX="factory/issue-${ISSUE_NUMBER}-"
+          # The jq program below is single-quoted on purpose; its $prefix is
+          # a jq variable bound via --arg, not a shell expansion.
+          # shellcheck disable=SC2016
           PR_URL="$(gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100" --jq '
             ([
               .[]
@@ -505,12 +514,12 @@ jobs:
         if: failure() && steps.should-run.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$REPOSITORY" \
-            --body "$(printf '❌ **Factory run failed**\n\nSee the [workflow run](%s) for logs.\n' \
-              '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}')"
+            --body "$(printf '❌ **Factory run failed**\n\nSee the [workflow run](%s) for logs.\n' "$RUN_URL")"
 
       - name: Comment on issue on success
         if: success() && steps.should-run.outputs.run == 'true'
