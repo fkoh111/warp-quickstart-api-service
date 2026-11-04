@@ -302,7 +302,7 @@ jobs:
 
       - name: Upload agent log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
            name: factory-run-${{ github.event.issue.number }}
            path: ${{ runner.temp }}/factory-runs/
@@ -671,7 +671,7 @@ jobs:
 
       - name: Upload agent log
         if: always() && steps.should-run.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
            name: factory-run-${{ github.event.issue.number }}
            path: ${{ runner.temp }}/factory-runs/
