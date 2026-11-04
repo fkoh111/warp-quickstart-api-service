@@ -50,6 +50,7 @@ the factory something to change and CI something to run; see [The target app](#t
 - Least-privilege workflow permissions via a dedicated GitHub App
 - Automated pull requests with test and lint evidence
 - Pull-request CI checks (`PR checks` workflow)
+- Local pytest suite that runs the workflow's real shell scripts
 - OpenTofu-managed GitHub setup: app credentials, label, branch
   protection, workflow permissions
 - Placeholder target app you can swap for your own project
@@ -83,7 +84,9 @@ the factory something to change and CI something to run; see [The target app](#t
 
 ### Trigger
 
-An issue is labeled `factory-ready`.
+An issue is labeled `factory-ready`. For controlled end-to-end tests, the
+workflow can also be started manually from the Actions tab (**Run
+workflow**, `workflow_dispatch`) with an issue number.
 
 ### Workflow
 
@@ -116,6 +119,21 @@ failed run.
 - Pull requests require **human review**.
 - Force pushes and branch deletions are blocked.
 - The factory never merges pull requests.
+
+### Testing the factory
+
+`factory/tests/` contains a local test suite that runs the workflow's
+actual shell scripts against sandboxed git repositories with mocked
+`npm`/`gh` binaries, plus `actionlint` static analysis:
+
+```bash
+factory/tests/run.sh
+```
+
+It needs `python3` (a venv is created automatically), `git`, and `jq`;
+Docker is used for actionlint when available (skipped otherwise). CI runs
+the same suite in the `factory-tests` job of `PR checks` whenever files
+under `factory/`, `.github/`, or `tofu/` change.
 
 ## Configuration
 
@@ -230,8 +248,13 @@ npm run lint
 │   ├── package.json                      # Node.js project metadata and scripts
 │   └── package-lock.json
 ├── factory/
-│   └── prompts/
-│       └── implement.md                  # OpenCode implementation prompt template
+│   ├── prompts/
+│   │   └── implement.md                  # OpenCode implementation prompt template
+│   └── tests/
+│       ├── conftest.py                   # fixtures: script extractor, git sandbox, shims
+│       ├── requirements.txt              # pytest + pyyaml for the local venv
+│       ├── run.sh                        # one-command suite runner (lint + tests)
+│       └── test_*.py                     # unit tests for the workflow scripts
 ├── .github/
 │   └── workflows/
 │       ├── factory-issue-labeled.yml     # issue-triggered factory workflow
